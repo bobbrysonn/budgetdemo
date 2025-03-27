@@ -27,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { createBudgetItem } from "@/server/actions";
+import { useRouter } from "next/navigation";
 
 const BudgetCategoryEnum = z.enum(
   [
@@ -68,7 +69,7 @@ const formSchema = z.object({
     .string({
       required_error: "Due date is required.",
     })
-    .min(1, { message: "Due date is required."}),
+    .min(1, { message: "Due date is required." }),
   paymentDate: z.date().optional().nullable(),
   contactId: z.coerce
     .number({ invalid_type_error: "Invalid contact selection." })
@@ -86,26 +87,27 @@ function formatEnumString(str: string) {
 }
 
 export function BudgetItemForm() {
+  const router = useRouter()
   const form = useForm<BudgetItemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
-      estimatedCost: undefined,
-      actualCost: undefined,
+      estimatedCost: 0,
+      actualCost: 0,
       status: "Planned",
       paymentDate: undefined,
       contactId: undefined,
     },
   });
 
-  const budgetItemMutation = useMutation(createBudgetItem, {
-    onSuccess: (data) => {
-      toast("New Budget Item was created")jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
-      hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
-      hhhhhhhhhhhhh
+  const budgetItemMutation = useMutation({ 
+    mutationFn: createBudgetItem,
+    onSuccess: () => {
+      toast("Successfully created budget item")
+      router.push("/dashboard/budget")
     }
-  })
+  });
 
   function onSubmit(values: BudgetItemFormValues) {
     const dataToSend = {
@@ -122,6 +124,8 @@ export function BudgetItemForm() {
           ? null
           : Number(values.actualCost),
     };
+
+    budgetItemMutation.mutate({ projectId: 1, budgetId: 3, budgetItem: dataToSend })
 
     toast("Creating budget item");
   }

@@ -18,7 +18,7 @@ export default function BudgetSummaryCards({
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["lineitems", projectId],
+    queryKey: ["budgetItems", projectId],
     queryFn: async () => await getBudgetItems(projectId),
     initialData: Array<BudgetItem>(),
   });

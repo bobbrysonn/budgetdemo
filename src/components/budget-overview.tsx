@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getBudgetItems } from "@/server/actions";
+import { BudgetItem, getBudgetItems } from "@/server/actions";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
@@ -21,6 +21,7 @@ export default function BudgetOverview({ projectId }: { projectId: number }) {
   } = useQuery({
     queryKey: ["budgetItems", projectId],
     queryFn: async () => await getBudgetItems(projectId),
+    initialData: new Array<BudgetItem>()
   });
 
   // Transform raw budget items into categorized summary

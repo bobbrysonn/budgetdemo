@@ -91,11 +91,15 @@ export async function getBudgetId(projectId: number): Promise<number> {
   return budgetId;
 }
 
-export async function createBudgetItem(
-  projectId: number,
-  budgetId: number,
-  budgetItem: BudgetItem
-): Promise<BudgetItem> {
+export async function createBudgetItem({
+  projectId,
+  budgetId,
+  budgetItem,
+}: {
+  projectId: number;
+  budgetId: number;
+  budgetItem: BudgetItem;
+}): Promise<BudgetItem> {
   const resp = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL_DEV}/projects/${projectId}/budgets/${budgetId}/items`,
     {
