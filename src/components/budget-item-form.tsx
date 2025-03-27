@@ -25,74 +25,139 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Paperclip } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { createBudgetItem } from "@/server/actions";
+
+const BudgetCategoryEnum = z.enum(
+  [
+    "TalentFees",
+    "EquipmentRental",
+    "LocationFees",
+    "PostProduction",
+    "PropsAndCostumes",
+    "TravelAccommodation",
+    "Insurance",
+    "Marketing",
+    "CrewSalaries",
+    "Miscellaneous",
+  ],
+  { required_error: "Please select a category." }
+);
+
+const PaymentStatusEnum = z.enum(
+  ["Planned", "Pending", "PartiallyPaid", "Paid", "Overdue"],
+  { required_error: "Please select a status." }
+);
 
 const formSchema = z.object({
-  description: z.string().min(2, {
-    message: "Description must be at least 2 characters.",
+  name: z.string().min(1, {
+    message: "Name is required.",
   }),
-  category: z.string({
-    required_error: "Please select a category.",
-  }),
-  estimatedCost: z.coerce.number().min(0, {
-    message: "Estimated cost must be a positive number.",
-  }),
+  description: z.string().optional(),
+  category: BudgetCategoryEnum,
+  estimatedCost: z.coerce
+    .number({ invalid_type_error: "Estimated cost must be a number." })
+    .min(0, { message: "Estimated cost must be non-negative." }),
   actualCost: z.coerce
-    .number()
-    .min(0, {
-      message: "Actual cost must be a positive number.",
+    .number({ invalid_type_error: "Actual cost must be a number." })
+    .min(0, { message: "Actual cost must be non-negative." })
+    .optional()
+    .nullable(),
+  status: PaymentStatusEnum,
+  dueDate: z
+    .string({
+      required_error: "Due date is required.",
     })
-    .optional(),
-  dueDate: z.string({
-    required_error: "Please select a due date.",
-  }),
-  status: z.string({
-    required_error: "Please select a status.",
-  }),
-  contact: z.string().optional(),
-  notes: z.string().optional(),
+    .min(1, { message: "Due date is required."}),
+  paymentDate: z.date().optional().nullable(),
+  contactId: z.coerce
+    .number({ invalid_type_error: "Invalid contact selection." })
+    .int()
+    .optional()
+    .nullable(),
 });
 
+type BudgetItemFormValues = z.infer<typeof formSchema>;
+
+function formatEnumString(str: string) {
+  if (!str) return "";
+
+  return str.replace(/([A-Z])/g, " $1").trim();
+}
+
 export function BudgetItemForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<BudgetItemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
       description: "",
-      estimatedCost: 0,
-      actualCost: 0,
-      notes: "",
+      estimatedCost: undefined,
+      actualCost: undefined,
+      status: "Planned",
+      paymentDate: undefined,
+      contactId: undefined,
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    toast("Your budget item has been created successfully.");
-    console.log(values);
+  const budgetItemMutation = useMutation(createBudgetItem, {
+    onSuccess: (data) => {
+      toast("New Budget Item was created")jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+      hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+      hhhhhhhhhhhhh
+    }
+  })
+
+  function onSubmit(values: BudgetItemFormValues) {
+    const dataToSend = {
+      ...values,
+      dueDate: new Date(values.dueDate).toISOString(),
+      estimatedCost: Number(values.estimatedCost),
+      paymentDate:
+        values.paymentDate === undefined
+          ? null
+          : values.paymentDate?.toISOString(),
+      contactId: values.contactId === undefined ? null : values.contactId,
+      actualCost:
+        values.actualCost === null || values.actualCost === undefined
+          ? null
+          : Number(values.actualCost),
+    };
+
+    toast("Creating budget item");
   }
+
+  const contacts = [
+    { id: 1, name: "John Smith" },
+    { id: 2, name: "Creative Writers Guild" },
+    { id: 3, name: "TechRentals Inc." },
+    { id: 4, name: "Tom Johnson" },
+    { id: 5, name: "Food For Film" },
+  ];
+
+  const budgetCategoryOptions = BudgetCategoryEnum.options;
+  const paymentStatusOptions = PaymentStatusEnum.options;
 
   return (
     <Tabs defaultValue="details" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="details">Item Details</TabsTrigger>
         <TabsTrigger value="payment">Payment Info</TabsTrigger>
-        <TabsTrigger value="attachments">Attachments</TabsTrigger>
       </TabsList>
-      <TabsContent value="details">
-        <Card>
-          <CardContent className="pt-6">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+          <TabsContent value="details">
+            <Card>
+              <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="description"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter description" {...field} />
+                          <Input placeholder="Enter item name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -103,26 +168,22 @@ export function BudgetItemForm() {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Category</FormLabel>
+                        <FormLabel>Category *</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="pre-production">
-                              Pre-Production
-                            </SelectItem>
-                            <SelectItem value="production">
-                              Production
-                            </SelectItem>
-                            <SelectItem value="post-production">
-                              Post-Production
-                            </SelectItem>
+                            {budgetCategoryOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {formatEnumString(option)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -134,9 +195,14 @@ export function BudgetItemForm() {
                     name="estimatedCost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estimated Cost</FormLabel>
+                        <FormLabel>Estimated Cost *</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -144,51 +210,33 @@ export function BudgetItemForm() {
                   />
                   <FormField
                     control={form.control}
-                    name="actualCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Actual Cost</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Leave at 0 if not yet incurred
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contact"
+                    name="contactId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contact</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) =>
+                            field.onChange(value ? String(value) : null)
+                          }
+                          defaultValue={
+                            field.value ? String(field.value) : undefined
+                          }
                         >
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a contact" />
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a contact (optional)" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="john-smith">
-                              John Smith
-                            </SelectItem>
-                            <SelectItem value="creative-writers">
-                              Creative Writers Guild
-                            </SelectItem>
-                            <SelectItem value="tech-rentals">
-                              TechRentals Inc.
-                            </SelectItem>
-                            <SelectItem value="tom-johnson">
-                              Tom Johnson
-                            </SelectItem>
-                            <SelectItem value="food-for-film">
-                              Food For Film
-                            </SelectItem>
+                            <SelectItem value="None">None</SelectItem>
+                            {contacts.map((contact) => (
+                              <SelectItem
+                                key={contact.id}
+                                value={String(contact.id)}
+                              >
+                                {contact.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -197,48 +245,51 @@ export function BudgetItemForm() {
                   />
                   <FormField
                     control={form.control}
-                    name="notes"
+                    name="description"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes</FormLabel>
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Add any additional notes here"
-                            className="resize-none"
-                            {...field}
-                          />
+                          <Textarea {...field} value={field.value ?? ""} />
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Add any additional description or notes (optional)
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                <div className="flex justify-end">
-                  <Button type="submit">Create Budget Item</Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="payment">
-        <Card>
-          <CardContent className="pt-6">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="payment">
+            <Card>
+              <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="dueDate"
+                    name="actualCost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Due Date</FormLabel>
+                        <FormLabel>Actual Cost</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === "" ? null : e.target.value
+                              )
+                            }
+                          />
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Leave empty or 0 if not yet incurred.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -248,52 +299,90 @@ export function BudgetItemForm() {
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Payment Status</FormLabel>
+                        <FormLabel>Payment Status *</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          defaultValue={field.value} // Default is 'Planned'
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select a status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="planned">Planned</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="paid">Paid</SelectItem>
+                            {/* Map over the enum options */}
+                            {paymentStatusOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {/* Format for user-friendliness */}
+                                {formatEnumString(option)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <FormDescription className="text-xs">
+                          Choose option
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Due Date *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Date the payment is due
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="paymentDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === "" ? null : e.target.value
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Date the payment was actually made (optional).
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                <div className="flex justify-end">
-                  <Button type="submit">Create Budget Item</Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="attachments">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-10">
-              <Paperclip className="h-10 w-10 text-muted-foreground" />
-              <h3 className="text-lg font-medium">Drag & drop files here</h3>
-              <p className="text-sm text-muted-foreground">
-                Attach invoices, contracts, or other relevant documents
-              </p>
-              <Button variant="outline">Browse Files</Button>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button type="submit">Create Budget Item</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <div className="mt-6 flex justify-end px-6 pb-6 md:px-0 md:pb-0">
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Saving..." : "Save Budget Item"}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </Tabs>
   );
 }
